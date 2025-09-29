@@ -1,1 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>通話ボタン + キーボード</title>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+/>
+<style>
+  :root{
+    --bubble-gap: 12px;   /* 吹き出し間の隙間 */
+    --bubble-height: 56px; /* 吹き出し高さ（見た目上の基準）*/
+  }
+  html,body{
+    height:100%;
+    margin:0;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+  }
 
+  .call-button {
+    background-color: #28a745;
+    color: white;
+    font-size: 2rem;
+    border: none;
+    border-radius: 30px;
+    padding: 15px 80px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease;
+    z-index: 2;
+    position: relative;
+  }
+
+  .moved {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.5rem;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .connected {
+    background-color: #dc3545 !important;
+  }
+
+  #inputWrapper {
+    width: 90vw;
+    max-width: 340px;
+    height: 50px;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    font-size: 1.8rem;
+    font-weight: bold;
+    overflow-x: hidden;
+    text-align: center;
+    white-space: nowrap;
+    margin-top: 30px;
+  }
+
+  #inputDisplay {
+    flex: 1;
+    font-family: Garamond, serif;
+    font-size: 1.8rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  #backspaceBtn {
+    cursor: pointer;
+    font-size: 1.8rem;
+    color: #000;
+    user-select: none;
+    margin-left: 10px;
+  }
+
+  #backspaceBtn:active {
+    transform: scale(0.9);
+  }
+
+  .dial-pad {
+    display: none;
+    grid-template-columns: repeat(3, 70px);
+    grid-gap: 15px;
+    justify-content: center;
+    margin-top: 70px;
+    position: fixed;
+    top: 180px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .dial-pad button {
+    width: 70px;
+    height: 70px;
+    font-size: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
+  }
+
+  .dial-pad button:active {
+    background-color: #ddd;
+    transform: scale(0.95);
+  }
+
+  #connecting {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  /* ▼ ローディングアニメーション：ドットサイズを少し大きく
+     （元のアニメーションに戻しました） */
+  .container {
+    --uib-size: 40px;
+    --uib-color: black;
+    --uib-speed: 1.75s;
+    display: inline-flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: var(--uib-size);
+    height: calc(var(--uib-size) * 0.6);
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  .cube {
+    flex-shrink: 0;
+    width: calc(var(--uib-size) * 0.2);
+    height: calc(var(--uib-size) * 0.2);
+    animation: jump var(--uib-speed) ease-in-out infinite;
+  }
+
+  .cube__inner {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 25%;
+    background-color: var(--uib-color);
+    transform-origin: center bottom;
+    animation: morph var(--uib-speed) ease-in-out infinite;
+    transition: background-color 0.3s ease;
+  }
+
+  .cube:nth-child(2) {
+    animation-delay: calc(var(--uib-speed) * -0.36);
+  }
+  .cube:nth-child(2) .cube__inner {
+    animation-delay: calc(var(--uib-speed) * -0.36);
+  }
+
+  .cube:nth-child(3) {
+    animation-delay: calc(var(--uib-speed) * -0.2);
+  }
+  .cube:nth-child(3) .cube__inner {
+    animation-delay: calc(var(--uib-speed) * -0.2);
+  }
+
+  @keyframes jump {
+    0% { transform: translateY(0px); }
+    30% { transform: translateY(0px); animation-timing-function: ease-out; }
+    50% { transform: translateY(-200%); animation-timing-function: ease-in; }
+    75% { transform: translateY(0px); animation-timing-function: ease-in; }
+  }
+
+  @keyframes morph {
+    0% { transform: scaleY(1); }
+    10% { transform: scaleY(1); }
+    20%, 25% { transform: scaleY(0.6) scaleX(1.3); animation-timing-function: ease-in-out; }
+    30% { transform: scaleY(1.15) scaleX(0.9); animation-timing-function: ease-in-out; }
+    40% { transform: scaleY(1); }
+    70%, 85%, 100% { transform: scaleY(1); }
+    75% { transform: scaleY(0.8) scaleX(1.2); }
+  }
+
+  #connectedIcon {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 50;
+    cursor: pointer;
+  }
+
+  #rightIcon {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 50;
+    cursor: pointer;
+  }
+
+  /* 吹き出しスタイル（高さは固定-ish） */
+  .speech-bubble {
+    position: fixed;
+    box-sizing: border-box;
+    max-width: 260px;
+    min-width: 120px;
+    height: var(--bubble-height);
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    font-size: 0.95rem;
+    line-height: 1.2;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.35s ease, transform 0.35s ease, bottom 0.35s ease, right 0.35s ease, left 0.35s ease;
+    z-index: 60;
+    pointer-events: none;
+    color: #222;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  .speech-bubble.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* デフォルト位置（画面端寄せ） */
+  #rightBubble { right: 70px; bottom: 30px; }
+  #leftBubble  { left: 70px; bottom: 110px; }
+  #leftPlanBubble { left: 70px; bottom: 30px; }
+
+  /* 小さめ画面調整 */
+  @media (max-width: 420px){
+    .speech-bubble{ max-width:180px; min-width:100px; font-size:0.9rem;}
+  }
+</style>
+</head>
+<body>
+<button class="call-button" id="callBtn">
+  <i class="fa-solid fa-phone"></i>
+</button>
+
+<div id="inputWrapper">
+  <div id="inputDisplay"></div>
+  <div id="backspaceBtn"><i class="fa-solid fa-delete-left"></i></div>
+</div>
+
+<div class="dial-pad" id="dialPad">
+  <button>1</button><button>2</button><button>3</button>
+  <button>4</button><button>5</button><button>6</button>
+  <button>7</button><button>8</button><button>9</button>
+  <button>*</button><button>0</button><button>#</button>
+</div>
+
+<div id="connecting">
+  接続中
+  <div class="container">
+    <div class="cube"><div class="cube__inner"></div></div>
+    <div class="cube"><div class="cube__inner"></div></div>
+    <div class="cube"><div class="cube__inner"></div></div>
+  </div>
+</div>
+
+<div id="connectedIcon" title="接続中"></div>
+<div id="rightIcon" title="E-203"></div>
+
+<!-- 吹き出し要素（使い回し可能） -->
+<div id="rightBubble" class="speech-bubble">こちらE-203、準備完了</div>
+<div id="leftBubble" class="speech-bubble">こちら、司令部</div>
+<div id="leftPlanBubble" class="speech-bubble">プランAを実行せよ</div>
+
+<script>
+/* 全体の振る舞い:
+   - 新しい吹き出しは「その吹き出しを表示するアイコンの横」に出る
+   - 新しい吹き出しが現れた瞬間、画面上にあるすべての既存吹き出しは
+     「吹き出しの幅一つ分（高さ + gap）」上にずれる（積み上げる）
+   実装方針:
+   - visibleBubbles 配列で現在表示中の吹き出し要素を管理
+   - addBubble(nextEl, iconEl, text) を呼ぶとまず既存を上へ移動させ、
+     次に nextEl をアイコン横に配置して表示する
+*/
+
+const callBtn = document.getElementById("callBtn");
+const dialPad = document.getElementById("dialPad");
+const inputWrapper = document.getElementById("inputWrapper");
+const inputDisplay = document.getElementById("inputDisplay");
+const backspaceBtn = document.getElementById("backspaceBtn");
+const connecting = document.getElementById("connecting");
+const connectedIcon = document.getElementById("connectedIcon");
+
+const rightIcon = document.getElementById("rightIcon");
+const rightBubble = document.getElementById("rightBubble");
+const leftBubble = document.getElementById("leftBubble");
+const leftPlanBubble = document.getElementById("leftPlanBubble");
+
+let currentInput = "";
+const visibleBubbles = []; // 画面上に表示中の吹き出し要素（順不同）
+
+// 吹き出し高さ（CSS変数と合わせる）
+const bubbleHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bubble-height')) || 56;
+const bubbleGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bubble-gap')) || 12;
+const shiftAmount = bubbleHeight + bubbleGap; // 移動量
+
+// #1〜#12 に対応する計画メッセージ
+function getPlanMessage(code) {
+  const map = {
+    "#1": "プランAを実行せよ",
+    "#2": "プランBを実行せよ",
+    "#3": "プランCを実行せよ",
+    "#4": "プランDを実行せよ",
+    "#5": "プランEを実行せよ",
+    "#6": "プランF を実行せよ",
+    "#7": "プランG を実行せよ",
+    "#8": "プランH を実行せよ",
+    "#9": "プランI を実行せよ",
+    "#10": "プランJ を実行せよ",
+    "#11": "プランK を実行せよ",
+    "#12": "プランL を実行せよ"
+  };
+  return map[code] || "";
+}
+
+// 既存の全ての吹き出しを上にずらす（新しい吹き出し幅一つ分）
+function shiftAllBubblesUp() {
+  // 先に配列コピーを作ってから処理（DOMの状態変化に強い）
+  const list = visibleBubbles.slice();
+  list.forEach(el => {
+    // 現在の bottom 値を取り、px -> 数値
+    const cur = window.getComputedStyle(el).bottom;
+    const curVal = parseFloat(cur) || 0;
+    el.style.bottom = (curVal + shiftAmount) + "px";
+  });
+}
+
+// 新しい吹き出しをアイコン横に出す（かつ既存は上へシフト）
+// nextEl: 表示する吹き出し要素（DOM）
+// iconEl: アイコン要素（connectedIcon または rightIcon）
+// text: 表示文字列
+function addBubble(nextEl, iconEl, text) {
+  // 既存を上にずらすルール適用
+  shiftAllBubblesUp();
+
+  // nextElのテキスト設定
+  nextEl.textContent = text;
+
+  // リセットして左右指定をクリア
+  nextEl.style.left = "";
+  nextEl.style.right = "";
+  nextEl.style.bottom = "";
+
+  // アイコンの位置を参照して、nextEl を横に配置
+  const iconRect = iconEl.getBoundingClientRect();
+
+  // スクロール/viewport基準で fixed 位置を計算
+  if (iconEl === connectedIcon) {
+    // 左アイコンの右側に表示 (横位置はアイコン右 + 10px)
+    // left を使って配置
+    const leftPos = (iconRect.right + 10); // px from viewport left
+    nextEl.style.left = leftPos + "px";
+    // アイコンと同じ高さ（bottom 基準で揃える）に配置するため、bottom をアイコンの bottom に合わせる
+    const bottomPos = window.innerHeight - iconRect.bottom;
+    nextEl.style.bottom = Math.max(8, bottomPos) + "px";
+  } else {
+    // 右アイコンの左側に表示 (右プロパティを使う)
+    const rightPos = (window.innerWidth - iconRect.left) + 10; // px from viewport right
+    nextEl.style.right = rightPos + "px";
+    const bottomPos = window.innerHeight - iconRect.bottom;
+    nextEl.style.bottom = Math.max(8, bottomPos) + "px";
+  }
+
+  // 既に表示中なら remove -> re-add to update z-index ordering
+  const idx = visibleBubbles.indexOf(nextEl);
+  if (idx !== -1) visibleBubbles.splice(idx,1);
+
+  // 表示配列の末尾に push（最新）
+  visibleBubbles.push(nextEl);
+
+  // z-index を更新：後に追加されたものが前面
+  visibleBubbles.forEach((el, i) => {
+    el.style.zIndex = 60 + i;
+  });
+
+  // 最後に show クラスでフェードイン
+  // 小さなリセットで再トリガーして確実にアニメーション
+  nextEl.classList.remove("show");
+  // force reflow
+  void nextEl.offsetWidth;
+  nextEl.classList.add("show");
+}
+
+// UI 初期化
+function resetUI() {
+  callBtn.classList.remove("moved", "connected");
+  callBtn.style.backgroundColor = "#28a745";
+  connecting.style.display = "none";
+  connectedIcon.style.display = "none";
+
+  rightIcon.style.display = "none";
+
+  // hide all bubbles and clear visibleBubbles
+  [rightBubble, leftBubble, leftPlanBubble].forEach(el => {
+    el.classList.remove("show");
+    // reset positions to defaults
+    el.style.left = "";
+    el.style.right = "";
+    // default bottoms:
+  });
+  visibleBubbles.length = 0;
+
+  // reset default bottom positions (CSS fallback)
+  rightBubble.style.right = "70px";
+  rightBubble.style.bottom = "30px";
+  leftBubble.style.left = "70px";
+  leftBubble.style.bottom = "110px";
+  leftPlanBubble.style.left = "70px";
+  leftPlanBubble.style.bottom = "30px";
+
+  connecting.innerHTML =
+    '接続中<div class="container">' +
+    '<div class="cube"><div class="cube__inner"></div></div>' +
+    '<div class="cube"><div class="cube__inner"></div></div>' +
+    '<div class="cube"><div class="cube__inner"></div></div>' +
+    "</div>";
+
+  inputDisplay.textContent = "";
+  currentInput = "";
+}
+
+// シーケンス: 右下吹き出し -> 2~4秒 -> 左上(司令部) -> 0.4s -> 左（最新プラン）
+// 新しい吹き出しが出る際に他は上へずれる処理は addBubble が担う
+function showBubblesSequence() {
+  rightIcon.style.display = "block";
+
+  // まず右下（E-203）を表示（これが最初の "新しい吹き出し"）
+  addBubble(rightBubble, rightIcon, "こちらE-203、準備完了");
+
+  // 2〜4秒待つ
+  const wait = 2000 + Math.floor(Math.random() * 2001);
+
+  setTimeout(() => {
+    // 左側一つ目（共通メッセージ）を新規吹き出しとして表示
+    addBubble(leftBubble, connectedIcon, "こちら、司令部");
+
+    // さらに短い遅延で計画メッセージ（最新）を表示
+    setTimeout(() => {
+      const planMsg = getPlanMessage(currentInput);
+      if (planMsg) {
+        addBubble(leftPlanBubble, connectedIcon, planMsg);
+      }
+    }, 400);
+  }, wait);
+}
+
+// ダイヤル入力など既存のロジック
+callBtn.addEventListener("click", () => {
+  if (callBtn.classList.contains("connected")) {
+    resetUI();
+    return;
+  }
+
+  if (!callBtn.classList.contains("moved")) {
+    callBtn.classList.add("moved");
+    dialPad.style.display = "grid";
+    inputWrapper.style.display = "flex";
+  } else {
+    if (/^#([1-9]|1[0-2])$/.test(currentInput)) {
+      callBtn.classList.add("hidden");
+      dialPad.style.display = "none";
+      inputWrapper.style.display = "none";
+      connecting.style.display = "block";
+
+      setTimeout(() => {
+        connecting.textContent = "接続完了";
+        callBtn.classList.remove("hidden");
+        callBtn.classList.add("connected");
+
+        connectedIcon.style.display = "block";
+
+        // シーケンス開始
+        showBubblesSequence();
+
+        setTimeout(() => {
+          connecting.style.display = "none";
+          connecting.innerHTML =
+            '接続中<div class="container">' +
+            '<div class="cube"><div class="cube__inner"></div></div>' +
+            '<div class="cube"><div class="cube__inner"></div></div>' +
+            '<div class="cube"><div class="cube__inner"></div></div>' +
+            "</div>";
+        }, 1000);
+      }, 3000);
+    } else {
+      alert("#1〜#12 のどれかを入力してください");
+    }
+  }
+});
+
+// ダイヤルパッド入力
+dialPad.querySelectorAll("button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (currentInput.length < 13) {
+      currentInput += btn.textContent;
+      inputDisplay.textContent = currentInput;
+    }
+  });
+});
+
+// バックスペース
+backspaceBtn.addEventListener("click", () => {
+  currentInput = currentInput.slice(0, -1);
+  inputDisplay.textContent = currentInput;
+});
+
+// 左下アイコン（接続中）クリックでリセット
+connectedIcon.addEventListener("click", () => {
+  resetUI();
+});
+
+// 右下アイコンクリックで吹き出しを強調（任意）
+rightIcon.addEventListener("click", () => {
+  addBubble(rightBubble, rightIcon, "こちらE-203、準備完了");
+});
+
+// getPlanMessage をここに保持
+function getPlanMessage(code) {
+  const map = {
+    "#1": "プランAを実行せよ",
+    "#2": "プランBを実行せよ",
+    "#3": "プランCを実行せよ",
+    "#4": "プランDを実行せよ",
+    "#5": "プランEを実行せよ",
+    "#6": "プランFを実行せよ",
+    "#7": "プランGを実行せよ",
+    "#8": "プランHを実行せよ",
+    "#9": "プランIを実行せよ",
+    "#10": "プランJを実行せよ",
+    "#11": "プランKを実行せよ",
+    "#12": "プランLを実行せよ"
+  };
+  return map[code] || "";
+}
+</script>
+</body>
+</html>
