@@ -240,19 +240,21 @@
     cursor: pointer;
   }
 
-  #rightIcon {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    z-index: 50;
-    cursor: pointer;
-  }
+#rightIcon {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-image: url("photo.png");  /* ← ここを追加 */
+  background-size: cover;              /* ← 画像を丸にフィット */
+  background-position: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 50;
+  cursor: pointer;
+}
 
   /* 吹き出しスタイル（高さは固定-ish） */
   .speech-bubble {
