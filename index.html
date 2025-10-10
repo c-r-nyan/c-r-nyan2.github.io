@@ -51,19 +51,6 @@
     position: relative;
   }
 
-.call-button .call-icon {
-  width: 40%;
-  height: 40%;
-  object-fit: contain;
-  pointer-events: none;
-  filter: invert(1); /* ← 白アイコン風に見せたい場合（黒い画像なら削除OK） */
-  transition: transform 0.2s ease;
-}
-
-.call-button:active .call-icon {
-  transform: scale(0.9);
-}
-
   .moved {
     position: fixed;
     top: 20px;
@@ -310,7 +297,7 @@
 </head>
 <body>
 <button class="call-button" id="callBtn">
-  <img src="phone.png" alt="Call" id="callIcon">
+  <i class="fa-solid fa-phone"></i>
 </button>
 
 <div id="inputWrapper">
@@ -598,7 +585,7 @@ rightIcon.addEventListener("click", () => {
 function getPlanMessage(code) {
   const map = {
     "#1": "軽くなる動物とは「かるい」動物であることに注意せよ",
-    "#2": "水と医者を音読みと訓読みをせよ",
+    "#2": "答えはこれだ◯◯◯⚪︎",
     "#3": "文字が落ちているようだ",
     "#4": "3×3マスの紙が二枚重ねよ",
     "#5": "ここまでの答えを思い出せ",
